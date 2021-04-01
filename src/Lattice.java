@@ -22,7 +22,7 @@ public class Lattice extends JPanel {
     int height;
 
     int c = 1; //lattice speed
-    double t = 4d/6; // relaxation time to equilibrium
+    double t = 8d/9; // relaxation time to equilibrium
     double denseMult = 256;
     double velMult = 1024;
 
