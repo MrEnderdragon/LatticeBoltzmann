@@ -22,9 +22,10 @@ public class Lattice extends JPanel {
     int height;
 
     int c = 1; //lattice speed
-    double t = 8d/9; // relaxation time to equilibrium
+    double t = 4d/6; // relaxation time to equilibrium
     double denseMult = 256;
     double velMult = 1024;
+    double lim = 1e100;
 
 
     private double[][] e = new double[][] {
@@ -39,7 +40,7 @@ public class Lattice extends JPanel {
             {1,-1}
     };
 
-    private double[] w = new double[] {
+    private final double[] w = new double[] {
         4d/9, 1d/9,  1d/9,  1d/9,  1d/9,  1d/36, 1d/36, 1d/36, 1d/36
     };
 
@@ -47,21 +48,80 @@ public class Lattice extends JPanel {
         return w[i] * (3*dot(e[i],u)/c + (9d/2)*pow2(dot(e[i],u))/(c*c) - (3d/2)*dot(u,u)/(c*c));
     }
 
-    private int[] inv = new int[] {
+    private final int[] inv = new int[] {
             0, 3, 4, 1, 2, 7, 8, 5, 6
     };
 
     public Lattice(int width, int height) {
+        this.width = width;
+        this.height = height;
+
+        zouHe = new short[width][height];
+        zouHeOr = new short[width][height];
+        zhPres = new double[width][height];
+        zhVel = new double[width][height][2];
+
+        this.reset();
+
+//        lattice = new double[width][height][9];
+//        latticeStar = new double[width][height][9];
+//        eqDis = new double[width][height][9];
+//        macroDense = new double[width][height];
+//        macroVel = new double[width][height][2];
+//        isWall = new boolean[width][height];
+//        zouHe = new short[width][height];
+//        zouHeOr = new short[width][height];
+//        zhPres = new double[width][height];
+//        zhVel = new double[width][height][2];
+//
+//        for (int i = 0; i < width; i++) {
+//            for (int j = 0; j < height; j++) {
+//                for (int k = 0; k < 9; k++) {
+//                    lattice[i][j][k] = w[k];
+////                    latticeStar[i][j][k] = w[k];
+//                }
+//
+//                macroDense[i][j] = 1;
+//                macroVel[i][j][0] = 0.5;
+//
+//                if(i == 0){
+//                    isWall[i][j] = true;
+//                } else if(i == width-1){
+//                    isWall[i][j] = true;
+//                } else if(j == 0){
+//                    isWall[i][j] = true;
+//                } else if (j == height-1){
+//                    isWall[i][j] = true;
+//                }
+//            }
+//        }
+//
+//        this.width = width;
+//        this.height = height;
+//
+//        stream2();
+////        updateMDMVED();
+//        updateMD();
+//        updateMV();
+//
+//        for (int i = 0; i < width; i++) {
+//            for (int j = 0; j < height; j++) {
+//                macroDense[i][j] = 1;
+//                macroVel[i][j][0] = 0.5;
+//            }
+//        }
+//
+//        updateED();
+//        collide();
+    }
+
+    public void reset () {
         lattice = new double[width][height][9];
         latticeStar = new double[width][height][9];
         eqDis = new double[width][height][9];
         macroDense = new double[width][height];
         macroVel = new double[width][height][2];
         isWall = new boolean[width][height];
-        zouHe = new short[width][height];
-        zouHeOr = new short[width][height];
-        zhPres = new double[width][height];
-        zhVel = new double[width][height][2];
 
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
@@ -70,8 +130,10 @@ public class Lattice extends JPanel {
 //                    latticeStar[i][j][k] = w[k];
                 }
 
-                macroDense[i][j] = 1;
-                macroVel[i][j][1] = 0.1;
+//                lattice[i][j][1] += 1;
+
+//                macroDense[i][j] = 1;
+//                macroVel[i][j][0] = 0.41;
 
                 if(i == 0){
                     isWall[i][j] = true;
@@ -87,12 +149,19 @@ public class Lattice extends JPanel {
 
         stream2();
 //        updateMDMVED();
-//        updateMD();
+        updateMD();
         updateMV();
-        updateED();
 
-        this.width = width;
-        this.height = height;
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+//                macroDense[i][j] = (1d-0.2)/width * (width-i);
+                macroVel[i][j][0] = 0.1;
+//                macroVel[i][j][0] = (0.41-0.21)/width * (width-i) + 0.21;
+            }
+        }
+
+        updateED();
+        collide();
     }
 
     private static double dot(double[] vect_A, double[] vect_B) {
@@ -106,6 +175,25 @@ public class Lattice extends JPanel {
 
     private static double pow2(double a) {
         return a*a;
+    }
+
+    public double clamp (double min, double max, double in){
+        return Math.max(min, Math.min(max, in));
+    }
+
+    public void clampAll (){
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                for (int k = 0; k < 9; k++) {
+                    lattice[i][j][k] = clamp(-lim, lim, lattice[i][j][k]);
+                    latticeStar[i][j][k] = clamp(-lim, lim, latticeStar[i][j][k]);
+                    eqDis[i][j][k] = clamp(-lim, lim, eqDis[i][j][k]);
+                }
+                macroDense[i][j] = clamp(-lim, lim, macroDense[i][j]);
+                macroVel[i][j][0] = clamp(-lim, lim, macroVel[i][j][0]);
+                macroVel[i][j][1] = clamp(-lim, lim, macroVel[i][j][1]);
+            }
+        }
     }
 
     private void stream () {
@@ -157,6 +245,15 @@ public class Lattice extends JPanel {
                     if(xLook<0 || xLook >=width || yLook<0 || yLook >=height) {
                         latticeStar[i][j][k] = w[k];
                     }else if(isWall[xLook][yLook]){
+//                        System.out.println("i " + i + " j " + j + " k " + k);
+//                        System.out.println(latticeStar.length);
+//                        System.out.println(latticeStar[0].length);
+//                        System.out.println(latticeStar[0][0].length);
+//
+//                        System.out.println(lattice.length);
+//                        System.out.println(lattice[0].length);
+//                        System.out.println(lattice[0][0].length);
+
                         latticeStar[i][j][k] = lattice[i][j][inv[k]];
                     }else {
                         latticeStar[i][j][k] = lattice[xLook][yLook][k];
@@ -289,10 +386,7 @@ public class Lattice extends JPanel {
 //        updateED();
         updateMDMVED();
         collide();
-    }
-
-    public double clamp (double min, double max, double in){
-        return Math.max(min, Math.min(max, in));
+        clampAll();
     }
 
     @Override
@@ -317,7 +411,7 @@ public class Lattice extends JPanel {
                     g2d.setColor(new Color(100, 100, 100));
                 }else {
 //                    g2d.setColor(new Color(val3, val, 255-val3));
-                    g2d.setColor(new Color(val6, val1/4, val7));
+                    g2d.setColor(new Color(val6, val4/4, val7));
                 }
                 g2d.drawLine(i,j,i,j);
 

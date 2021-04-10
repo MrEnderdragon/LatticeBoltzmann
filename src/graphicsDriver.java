@@ -53,7 +53,7 @@ public class graphicsDriver extends JFrame {
         for (int i = 2; i < lat.height-2; i++) {
             lat.zouHe[1][i] = 3;
             lat.zouHeOr[1][i] = 1;
-            lat.zhVel[1][i][0] = 1d/1;
+            lat.zhVel[1][i][0] = 1d/2;
             lat.zhPres[1][i] = 1;
         }
 
@@ -61,7 +61,7 @@ public class graphicsDriver extends JFrame {
             lat.zouHe[lat.width-2][i] = 1;
             lat.zouHeOr[lat.width-2][i] = 3;
 //                lat.zhVel[lat.width-2][i][0] = -1d/7;
-            lat.zhPres[lat.width-2][i] = -0.3;
+            lat.zhPres[lat.width-2][i] = -0;
         }
 
         JPanel controlPanel = new JPanel();
@@ -71,6 +71,9 @@ public class graphicsDriver extends JFrame {
         JButton run = new JButton("run");
         JButton pause = new JButton("pause");
         JButton reset = new JButton("reset");
+
+        JLabel info = new JLabel("Dense: 0    |     Vel: 0,0", JLabel.CENTER);
+        info.setText("tmp");
 
         running = false;
         pause.setEnabled(false);
@@ -85,27 +88,38 @@ public class graphicsDriver extends JFrame {
             run.setEnabled(true);
             pause.setEnabled(false);
         });
-//        reset.addActionListener(e -> {
-//            Lattice tmp = lat;
-//            lat = new Lattice(tmp.width, tmp.height);
-//            lat.isWall = tmp.isWall;
-//            frame.add(lat, BorderLayout.CENTER);
-//        });
+        reset.addActionListener(e -> {
+            running = false;
+            run.setEnabled(true);
+            pause.setEnabled(false);
+
+            lat.reset();
+            frame.revalidate();
+            frame.repaint();
+        });
 
         lat.addMouseMotionListener(new MouseMotionListener() {
 
             @Override
             public void mouseDragged(MouseEvent e) {
-                lat.isWall[e.getX()][e.getY()] = e.getButton() == MouseEvent.BUTTON1;
 
-                lat.isWall[e.getX()-1][e.getY()] = e.getButton() == MouseEvent.BUTTON1;
-                lat.isWall[e.getX()-1][e.getY()-1] = e.getButton() == MouseEvent.BUTTON1;
-                lat.isWall[e.getX()][e.getY()-1] = e.getButton() == MouseEvent.BUTTON1;
-                lat.isWall[e.getX()+1][e.getY()-1] = e.getButton() == MouseEvent.BUTTON1;
-                lat.isWall[e.getX()+1][e.getY()] = e.getButton() == MouseEvent.BUTTON1;
-                lat.isWall[e.getX()+1][e.getY()+1] = e.getButton() == MouseEvent.BUTTON1;
-                lat.isWall[e.getX()][e.getY()+1] = e.getButton() == MouseEvent.BUTTON1;
-                lat.isWall[e.getX()-1][e.getY()+1] = e.getButton() == MouseEvent.BUTTON1;
+                for (int i = -1; i <= 1; i++) {
+                    for (int j = -1; j < 1; j++) {
+                        if(e.getX()+i >= 0 && e.getX()+i < lat.width && e.getY()+j >= 0 && e.getY()+j < lat.height)
+                        lat.isWall[e.getX()+i][e.getY()+j] = e.getButton() == MouseEvent.BUTTON1;
+                    }
+                }
+
+//                lat.isWall[e.getX()][e.getY()] = e.getButton() == MouseEvent.BUTTON1;
+//
+//                lat.isWall[e.getX()-1][e.getY()] = e.getButton() == MouseEvent.BUTTON1;
+//                lat.isWall[e.getX()-1][e.getY()-1] = e.getButton() == MouseEvent.BUTTON1;
+//                lat.isWall[e.getX()][e.getY()-1] = e.getButton() == MouseEvent.BUTTON1;
+//                lat.isWall[e.getX()+1][e.getY()-1] = e.getButton() == MouseEvent.BUTTON1;
+//                lat.isWall[e.getX()+1][e.getY()] = e.getButton() == MouseEvent.BUTTON1;
+//                lat.isWall[e.getX()+1][e.getY()+1] = e.getButton() == MouseEvent.BUTTON1;
+//                lat.isWall[e.getX()][e.getY()+1] = e.getButton() == MouseEvent.BUTTON1;
+//                lat.isWall[e.getX()-1][e.getY()+1] = e.getButton() == MouseEvent.BUTTON1;
 
                 frame.revalidate();
                 frame.repaint();
@@ -113,7 +127,8 @@ public class graphicsDriver extends JFrame {
 
             @Override
             public void mouseMoved(MouseEvent e) {
-
+                info.setText("Dense: " + lat.macroDense[e.getX()][e.getY()] + "    |     Vel: " +
+                        lat.macroVel[e.getX()][e.getY()][0] + "," + lat.macroVel[e.getX()][e.getY()][1]);
             }
         });
 
@@ -124,6 +139,7 @@ public class graphicsDriver extends JFrame {
 
         frame.add(controlPanel, BorderLayout.NORTH);
         frame.add(lat, BorderLayout.CENTER);
+        frame.add(info, BorderLayout.SOUTH);
 
         frame.setVisible(true);
 
