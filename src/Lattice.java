@@ -23,8 +23,8 @@ public class Lattice extends JPanel {
 
     int c = 1; //lattice speed
     double t = 4d/6; // relaxation time to equilibrium
-    double denseMult = 256;
-    double velMult = 1024;
+    double denseMult = 128;
+    double velMult = 128;
     double lim = 1e100;
 
 
@@ -152,9 +152,12 @@ public class Lattice extends JPanel {
         updateMD();
         updateMV();
 
+        // ~~~~~~~~~~~~~~~~    Poiseuille flow ~~~~~~~~~~~~~~~~
+
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
 //                macroDense[i][j] = (1d-0.2)/width * (width-i);
+//                macroDense[i][j] = 1.3;
                 macroVel[i][j][0] = 0.1;
 //                macroVel[i][j][0] = (0.41-0.21)/width * (width-i) + 0.21;
             }
@@ -278,17 +281,17 @@ public class Lattice extends JPanel {
                     }else if (zouHeOr[i][j] == 2) { // bottom
 
                     }else if (zouHeOr[i][j] == 3) { // right
-//                        latticeStar[i][j][3] = latticeStar[i][j][1] - (2d/3) * presh * velo[1];
-//
-//                        latticeStar[i][j][7] = latticeStar[i][j][5] - (1d/2)*(latticeStar[i][j][4] - latticeStar[i][j][2]) +
-//                                (1d/6)*presh*velo[0] + (1d/2)*presh*velo[1];
-//
-//                        latticeStar[i][j][6] = latticeStar[i][j][8] + (1d/2)*(latticeStar[i][j][4] - latticeStar[i][j][2]) +
-//                                (1d/6)*presh*velo[0] - (1d/2)*presh*velo[1];
+                        latticeStar[i][j][3] = latticeStar[i][j][1] - (2d/3) * presh * velo[1];
 
-                        latticeStar[i][j][3] = 0.05;
-                        latticeStar[i][j][7] = 0.05;
-                        latticeStar[i][j][6] = 0.05;
+                        latticeStar[i][j][7] = latticeStar[i][j][5] - (1d/2)*(latticeStar[i][j][4] - latticeStar[i][j][2]) +
+                                (1d/6)*presh*velo[0] + (1d/2)*presh*velo[1];
+
+                        latticeStar[i][j][6] = latticeStar[i][j][8] + (1d/2)*(latticeStar[i][j][4] - latticeStar[i][j][2]) +
+                                (1d/6)*presh*velo[0] - (1d/2)*presh*velo[1];
+
+//                        latticeStar[i][j][3] = 0.05;
+//                        latticeStar[i][j][7] = 0.05;
+//                        latticeStar[i][j][6] = 0.05;
                     }
                 }
             }
@@ -402,6 +405,7 @@ public class Lattice extends JPanel {
                 int val1 = (int) clamp(0,255,Math.abs(macroVel[i][j][0]*velMult)); // horizontal speed
                 int val2 = (int) clamp(0,255,Math.abs(macroVel[i][j][1]*velMult)); // vertical speed
                 int val3 = (int) clamp(0,255, val1+val2); // total speed
+                int val3half = (int) clamp(0,255, val1*val1 + val2*val2); // total speed
                 int val4 = (int) clamp(0,255,macroVel[i][j][0]*velMult); // positive horizontal
                 int val5 = (int) clamp(0,255,-macroVel[i][j][0]*velMult); // negative horizontal
                 int val6 = (int) clamp(0,255,macroVel[i][j][1]*velMult); // positive vert
@@ -410,8 +414,10 @@ public class Lattice extends JPanel {
                 if(isWall[i][j]){
                     g2d.setColor(new Color(100, 100, 100));
                 }else {
-//                    g2d.setColor(new Color(val3, val, 255-val3));
-                    g2d.setColor(new Color(val6, val4/4, val7));
+//                    g2d.setColor(new Color(val3, val, 255-val3)); // speed + dense
+//                    g2d.setColor(new Color(val, val, val)); // all density
+                    g2d.setColor(Color.getHSBColor(0.5f-(val3half/512f), 1f, val/255f)); // hue for speed, value for density
+//                    g2d.setColor(new Color(val6, val4/4, val7)); // speed
                 }
                 g2d.drawLine(i,j,i,j);
 

@@ -28,6 +28,14 @@ public class graphicsDriver extends JFrame {
 //                }
 //            }
 
+
+            //cylinder
+//            for (int i = 0; i < lat.width; i++) {
+//                for (int j = 0; j < lat.height; j++) {
+//                    if ((j - 110) * (j - 110) + (i - 75) * (i - 75) < 500) lat.isWall[i][j] = true;
+//                }
+//            }
+
             if(running) {
                 lat.step();
             }
@@ -42,13 +50,19 @@ public class graphicsDriver extends JFrame {
     }
 
     public static void main(String[] args) {
-        int frameWidth = 500;
+        int frameWidth = 500; // Poiseuille flow
         int frameHeight = 200;
+
+//        int frameWidth = 256; // moving lid
+//        int frameHeight = 256;
+
         frame = new javax.swing.JFrame();
         frame.setSize(frameWidth, frameHeight+100);
         frame.setLayout(new BorderLayout());
 
         lat = new Lattice(frameWidth, frameHeight);
+
+        // ~~~~~~~~~~~~~~~~    Poiseuille flow ~~~~~~~~~~~~~~~~
 
         for (int i = 2; i < lat.height-2; i++) {
             lat.zouHe[1][i] = 3;
@@ -63,6 +77,15 @@ public class graphicsDriver extends JFrame {
 //                lat.zhVel[lat.width-2][i][0] = -1d/7;
             lat.zhPres[lat.width-2][i] = -0;
         }
+
+        // ~~~~~~~~~~~~~~~~ moving lid ~~~~~~~~~~~~~~~~
+
+//        for (int i = 2; i < lat.height-2; i++) {
+//            lat.zouHe[1][i] = 2;
+//            lat.zouHeOr[1][i] = 1;
+//            lat.zhVel[1][i][1] = 1d/20;
+////            lat.zhPres[1][i] = 1;
+//        }
 
         JPanel controlPanel = new JPanel();
         controlPanel.setLayout(new FlowLayout());
@@ -106,7 +129,8 @@ public class graphicsDriver extends JFrame {
                 for (int i = -1; i <= 1; i++) {
                     for (int j = -1; j < 1; j++) {
                         if(e.getX()+i >= 0 && e.getX()+i < lat.width && e.getY()+j >= 0 && e.getY()+j < lat.height)
-                        lat.isWall[e.getX()+i][e.getY()+j] = e.getButton() == MouseEvent.BUTTON1;
+                        lat.isWall[e.getX()+i][e.getY()+j] = SwingUtilities.isLeftMouseButton(e);
+//                                e.getButton() == MouseEvent.BUTTON1;
                     }
                 }
 
@@ -127,8 +151,9 @@ public class graphicsDriver extends JFrame {
 
             @Override
             public void mouseMoved(MouseEvent e) {
-                info.setText("Dense: " + lat.macroDense[e.getX()][e.getY()] + "    |     Vel: " +
-                        lat.macroVel[e.getX()][e.getY()][0] + "," + lat.macroVel[e.getX()][e.getY()][1]);
+                if(e.getX() >= 0 && e.getX() < lat.width && e.getY() >= 0 && e.getY() < lat.height)
+                    info.setText("Dense: " + lat.macroDense[e.getX()][e.getY()] + "    |     Vel: " +
+                            lat.macroVel[e.getX()][e.getY()][0] + "," + lat.macroVel[e.getX()][e.getY()][1]);
             }
         });
 
@@ -142,6 +167,8 @@ public class graphicsDriver extends JFrame {
         frame.add(info, BorderLayout.SOUTH);
 
         frame.setVisible(true);
+
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
 //        update ud = new update();
 
