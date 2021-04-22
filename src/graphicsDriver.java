@@ -12,55 +12,52 @@ public class graphicsDriver extends JFrame {
 
     private static javax.swing.JFrame frame;
     private static Lattice lat;
-    private static boolean running;
+//    private static boolean running;
+    private static drawType drT;
+    private static Timer updTimer;
+    private static Timer partTimer;
+
 
     public static class update extends TimerTask {
 
-        private long count = 0;
-
         @Override
         public void run() {
-//            if(count == 500) {
-//                for (int i = 0; i < lat.width; i++) {
-//                    for (int j = 0; j < lat.height; j++) {
-//                        if ((j - 110) * (j - 110) + (i - 75) * (i - 75) < 500) lat.isWall[i][j] = true;
-//                    }
-//                }
-//            }
-
-
-            //cylinder
-//            for (int i = 0; i < lat.width; i++) {
-//                for (int j = 0; j < lat.height; j++) {
-//                    if ((j - 110) * (j - 110) + (i - 75) * (i - 75) < 500) lat.isWall[i][j] = true;
-//                }
-//            }
-
-            if(running) {
-                lat.step();
-            }
-
+            lat.step();
             frame.revalidate();
             frame.repaint();
-
-            count++;
-
-//            System.out.println("update");
         }
     }
 
-    public static void main(String[] args) {
-//        int frameWidth = 500; // Poiseuille flow
-//        int frameHeight = 200;
+    public static class uptParts extends TimerTask {
 
-        int frameWidth = 256; // moving lid
-        int frameHeight = 256;
+        @Override
+        public void run() {
+            lat.moveParts();
+            frame.revalidate();
+            frame.repaint();
+        }
+    }
+
+    static enum drawType {
+        walls,
+        particles
+    }
+
+    public static void main(String[] args) {
+        int frameWidth = 500; // Poiseuille flow
+        int frameHeight = 200;
+
+//        int frameWidth = 256; // moving lid
+//        int frameHeight = 256;
 
         frame = new javax.swing.JFrame();
-        frame.setSize(frameWidth+100, frameHeight+100);
+        frame.setSize(frameWidth+500, frameHeight+200);
         frame.setLayout(new BorderLayout());
 
-        lat = new Lattice(frameWidth, frameHeight, Lattice.setup.MoveLid, Lattice.color.denseVel);
+        lat = new Lattice(frameWidth, frameHeight, Lattice.setup.Poiseuille, Lattice.color.denseVel);
+
+        updTimer = new Timer();
+        partTimer = new Timer();
 
         // ~~~~~~~~~~~~~~~~    Poiseuille flow ~~~~~~~~~~~~~~~~
 
@@ -93,6 +90,8 @@ public class graphicsDriver extends JFrame {
 
         JButton run = new JButton("run");
         JButton pause = new JButton("pause");
+        JButton runParts = new JButton("run particles");
+        JButton pauseParts = new JButton("pause particles");
         JButton resetWalls = new JButton("reset walls");
         JButton resetFlow = new JButton("reset flow");
         JButton resetAll = new JButton("reset all");
@@ -104,24 +103,52 @@ public class graphicsDriver extends JFrame {
         JButton denseVel = new JButton("Dense + Vel");
         JButton partVel = new JButton("Part + Vel");
 
+        JPanel drawPan = new JPanel();
+        drawPan.setLayout(new GridLayout(0,1));
+        drawPan.setPreferredSize(new Dimension(100, 10));
+
+        JButton drWalls = new JButton("Draw Walls");
+        JButton drParts = new JButton("Draw Particles");
+
         JLabel info = new JLabel("Dense: 0    |     Vel: 0,0", JLabel.CENTER);
         info.setText("tmp");
 
-        running = false;
+//        running = false;
+        drT = drawType.walls;
+
         pause.setEnabled(false);
+        denseVel.setEnabled(false);
+        drWalls.setEnabled(false);
 
         run.addActionListener(e -> {
-            running = true;
+            updTimer = new Timer();
+            updTimer.schedule(new update(), 0, 1);
+            partTimer.cancel();
             run.setEnabled(false);
             pause.setEnabled(true);
+            runParts.setEnabled(false);
+            pauseParts.setEnabled(false);
         });
         pause.addActionListener(e -> {
-            running = false;
+            updTimer.cancel();
             run.setEnabled(true);
             pause.setEnabled(false);
+            runParts.setEnabled(true);
+            pauseParts.setEnabled(false);
+        });
+        runParts.addActionListener(e -> {
+            partTimer = new Timer();
+            partTimer.schedule(new uptParts(), 0, 1);
+            runParts.setEnabled(false);
+            pauseParts.setEnabled(true);
+        });
+        pauseParts.addActionListener(e -> {
+            partTimer.cancel();
+            runParts.setEnabled(true);
+            pauseParts.setEnabled(false);
         });
         resetWalls.addActionListener(e -> {
-            running = false;
+            updTimer.cancel();
             run.setEnabled(true);
             pause.setEnabled(false);
 
@@ -130,7 +157,7 @@ public class graphicsDriver extends JFrame {
             frame.repaint();
         });
         resetFlow.addActionListener(e -> {
-            running = false;
+            updTimer.cancel();
             run.setEnabled(true);
             pause.setEnabled(false);
 
@@ -139,7 +166,7 @@ public class graphicsDriver extends JFrame {
             frame.repaint();
         });
         resetAll.addActionListener(e -> {
-            running = false;
+            updTimer.cancel();
             run.setEnabled(true);
             pause.setEnabled(false);
 
@@ -153,11 +180,26 @@ public class graphicsDriver extends JFrame {
             lat.curCol = Lattice.color.denseVel;
             denseVel.setEnabled(false);
             partVel.setEnabled(true);
+            frame.revalidate();
+            frame.repaint();
         });
         partVel.addActionListener(e -> {
             lat.curCol = Lattice.color.partVel;
             denseVel.setEnabled(true);
             partVel.setEnabled(false);
+            frame.revalidate();
+            frame.repaint();
+        });
+
+        drWalls.addActionListener(e -> {
+            drT = drawType.walls;
+            drWalls.setEnabled(false);
+            drParts.setEnabled(true);
+        });
+        drParts.addActionListener(e -> {
+            drT = drawType.particles;
+            drWalls.setEnabled(true);
+            drParts.setEnabled(false);
         });
 
         lat.addMouseMotionListener(new MouseMotionListener() {
@@ -168,9 +210,9 @@ public class graphicsDriver extends JFrame {
                 for (int i = -1; i <= 1; i++) {
                     for (int j = -1; j < 1; j++) {
                         if(e.getX()+i >= 0 && e.getX()+i < lat.width && e.getY()+j >= 0 && e.getY()+j < lat.height) {
-                            if(lat.curCol == Lattice.color.denseVel){
+                            if(drT == drawType.walls){
                                 lat.isWall[e.getX() + i][e.getY() + j] = SwingUtilities.isLeftMouseButton(e);
-                            }else if(lat.curCol == Lattice.color.partVel){
+                            }else if(drT == drawType.particles){
                                 lat.isPart[e.getX() + i][e.getY() + j] = SwingUtilities.isLeftMouseButton(e);
                             }
                         }
@@ -190,9 +232,10 @@ public class graphicsDriver extends JFrame {
             }
         });
 
-
         controlPanel.add(run);
         controlPanel.add(pause);
+        controlPanel.add(runParts);
+        controlPanel.add(pauseParts);
         controlPanel.add(resetWalls);
         controlPanel.add(resetFlow);
         controlPanel.add(resetAll);
@@ -200,16 +243,18 @@ public class graphicsDriver extends JFrame {
         colPan.add(denseVel);
         colPan.add(partVel);
 
+        drawPan.add(drWalls);
+        drawPan.add(drParts);
+
         frame.add(controlPanel, BorderLayout.NORTH);
         frame.add(colPan, BorderLayout.EAST);
+        frame.add(drawPan, BorderLayout.WEST);
+
         frame.add(lat, BorderLayout.CENTER);
         frame.add(info, BorderLayout.SOUTH);
 
         frame.setVisible(true);
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-        Timer timer = new Timer();
-        timer.schedule(new update(), 0, 1);
     }
 }

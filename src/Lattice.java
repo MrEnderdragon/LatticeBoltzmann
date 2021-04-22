@@ -414,9 +414,9 @@ public class Lattice extends JPanel {
         boolean[][] nextPart = new boolean[width][height];
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                if((zouHe[i][j] & 2) != 0){
-                    isPart[i][j] = true;
-                }
+//                if((zouHe[i][j] & 2) != 0){
+//                    isPart[i][j] = true;
+//                }
                 if(isPart[i][j]) {
                     double thresh = 0.05;
 
@@ -477,7 +477,7 @@ public class Lattice extends JPanel {
                 int val8 = (int) clamp(0,255,isPart[i][j]?partTop:partBot); // has particle?
 
                 if(isWall[i][j]){
-                    g2d.setColor(new Color(100, 100, 100));
+                    g2d.setColor(new Color(0, 0, 0));
                 }else {
                     if(curCol == color.denseVel) {
                         g2d.setColor(Color.getHSBColor(0.5f - (val3half / 512f), 1f, val / 255f)); // hue for speed, value for density
